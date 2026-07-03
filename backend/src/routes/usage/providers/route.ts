@@ -1,0 +1,42 @@
+
+import { getRequestDetails } from "../../../lib/requestDetailsDb.js";
+import { getProviderNodes } from "../../../lib/localDb.js";
+import { AI_PROVIDERS, getProviderByAlias } from "../../../shared/constants/providers.js";
+
+/**
+ * GET /api/usage/providers
+ * Returns list of unique providers from request details
+ */
+export async function GET(req: any, res: any) {
+  try {
+    const { details } = await getRequestDetails({ pageSize: 9999 });
+
+    // Extract unique providers
+    const providerIds = [...new Set(details.map(r => r.provider).filter(Boolean))].sort();
+
+    const providerNodes = await getProviderNodes();
+    const nodeMap = {};
+    for (const node of providerNodes) {
+      nodeMap[node.id] = node.name;
+    }
+
+    const providers = providerIds.map(providerId => {
+      let name = providerId;
+      if (nodeMap[providerId]) {
+        name = nodeMap[providerId];
+      } else {
+        const providerConfig = getProviderByAlias(providerId) || AI_PROVIDERS[providerId];
+        if (providerConfig?.name) name = providerConfig.name;
+      }
+      return { id: providerId, name };
+    });
+
+    return res.json({ providers });
+  } catch (error) {
+    console.error("[API] Failed to get providers:", error);
+    return res.json(
+      { error: "Failed to fetch providers" },
+      { status: 500 }
+    );
+  }
+}

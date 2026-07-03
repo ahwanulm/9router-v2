@@ -1,0 +1,22 @@
+import { handleImageGeneration } from "../../../../sse/handlers/imageGeneration.js";
+
+export async function OPTIONS() {
+  return new Response(null, {
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "*",
+    },
+  });
+}
+
+/** POST /v1/images/generations - OpenAI-compatible image generation endpoint */
+export async function POST_handler(req: any, res: any) {
+  const fullUrl = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
+  const webReq = new Request(fullUrl, {
+    method: req.method,
+    headers: new Headers(req.headers as any),
+    body: req.method !== 'GET' && req.method !== 'HEAD' ? JSON.stringify(req.body) : undefined
+  });
+  return await handleImageGeneration(webReq);
+}
