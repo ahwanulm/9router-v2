@@ -4,22 +4,22 @@ import { SignInPage, Testimonial } from "@/components/ui/sign-in";
 
 const sampleTestimonials: Testimonial[] = [
   {
-    avatarSrc: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=60",
-    name: "Sarah Chen",
-    handle: "@sarahdigital",
-    text: "Amazing LLM router! Routing latency is extremely fast, and the account failover mechanism is brilliant."
+    avatarSrc: "",
+    name: "Klipers AI",
+    handle: "@klipers.pro",
+    text: "High-performance AI model provider. Try out advanced text generation, images, and audio workflows."
   },
   {
-    avatarSrc: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=60",
-    name: "Marcus Johnson",
-    handle: "@marcustech",
-    text: "9Router transformed how we manage models. Free Cloudflare Workers AI integration works flawlessly."
+    avatarSrc: "",
+    name: "AM Stream",
+    handle: "@amstream.pro",
+    text: "Enterprise-grade media proxy and LLM endpoint load balancing. Scale your infrastructure dynamically."
   },
   {
-    avatarSrc: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=60",
-    name: "Tutorial",
+    avatarSrc: "",
+    name: "Tutorials",
     handle: "@tutorial",
-    text: "Clean dashboard design, powerful model load balancer, and very intuitive settings management."
+    text: "Read step-by-step guides on the Docs page to connect your AI models and manage proxies."
   },
 ];
 
