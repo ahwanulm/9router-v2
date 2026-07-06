@@ -20,6 +20,7 @@ export interface Testimonial {
   name: string;
   handle: string;
   text: string;
+  link?: string;
 }
 
 interface SignInPageProps {
@@ -54,18 +55,36 @@ const GlassInputWrapper = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-const TestimonialCard = ({ testimonial, delay }: { testimonial: Testimonial, delay: string }) => (
-  <div className={`animate-testimonial ${delay} flex items-start gap-3 rounded-3xl bg-white/40 dark:bg-zinc-800/40 backdrop-blur-xl border border-white/10 p-5 w-64`}>
-    {testimonial.avatarSrc && (
-      <img src={testimonial.avatarSrc} className="h-10 w-10 object-cover rounded-2xl shrink-0" alt="avatar" />
-    )}
-    <div className="text-sm leading-snug min-w-0">
-      <p className="flex items-center gap-1 font-medium text-zinc-900 dark:text-zinc-100">{testimonial.name}</p>
-      <p className="text-zinc-500 dark:text-zinc-400 truncate">{testimonial.handle}</p>
-      <p className="mt-1 text-zinc-800 dark:text-zinc-200">{testimonial.text}</p>
+const TestimonialCard = ({ testimonial, delay }: { testimonial: Testimonial, delay: string }) => {
+  const CardContent = (
+    <>
+      {testimonial.avatarSrc && (
+        <img src={testimonial.avatarSrc} className="h-10 w-10 object-cover rounded-2xl shrink-0" alt="avatar" />
+      )}
+      <div className="text-sm leading-snug min-w-0">
+        <p className="flex items-center gap-1 font-medium text-zinc-900 dark:text-zinc-100">{testimonial.name}</p>
+        <p className="text-zinc-500 dark:text-zinc-400 truncate group-hover:text-violet-400 transition-colors">{testimonial.handle}</p>
+        <p className="mt-1 text-zinc-800 dark:text-zinc-200">{testimonial.text}</p>
+      </div>
+    </>
+  );
+
+  const classes = `animate-testimonial ${delay} flex items-start gap-3 rounded-3xl bg-white/40 dark:bg-zinc-800/40 backdrop-blur-xl border border-white/10 p-5 w-64 text-left transition-all hover:scale-105 hover:bg-white/50 dark:hover:bg-zinc-850/50 group block`;
+
+  if (testimonial.link) {
+    return (
+      <a href={testimonial.link} target="_blank" rel="noopener noreferrer" className={classes}>
+        {CardContent}
+      </a>
+    );
+  }
+
+  return (
+    <div className={classes}>
+      {CardContent}
     </div>
-  </div>
-);
+  );
+};
 
 // --- MAIN COMPONENT ---
 

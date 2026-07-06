@@ -7,19 +7,22 @@ const sampleTestimonials: Testimonial[] = [
     avatarSrc: "",
     name: "Klipers AI",
     handle: "@klipers.pro",
-    text: "Potong video YouTube jadi shorts viral otomatis pake AI. Tempel link, langsung jadi konten!"
+    text: "Potong video YouTube jadi shorts viral otomatis pake AI. Tempel link, langsung jadi konten!",
+    link: "https://klipers.pro"
   },
   {
     avatarSrc: "",
     name: "AMSTREAM",
     handle: "@amstream.pro",
-    text: "Platform live streaming profesional. Multi-stream video ke YouTube, Facebook, Twitch secara bersamaan dengan satu klik."
+    text: "Platform live streaming profesional. Multi-stream video ke YouTube, Facebook, Twitch secara bersamaan dengan satu klik.",
+    link: "https://amstream.pro"
   },
   {
     avatarSrc: "",
     name: "Tutorials",
     handle: "@tutorial",
-    text: "Read step-by-step guides on the Docs page to connect your AI models and manage proxies."
+    text: "Read step-by-step guides on the Docs page to connect your AI models and manage proxies.",
+    link: "/dashboard/docs"
   },
 ];
 
