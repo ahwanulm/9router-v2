@@ -219,6 +219,31 @@ export function openaiToClaudeResponse(chunk, state) {
     stopThinkingBlock(state, results);
     stopTextBlock(state, results);
 
+    // If no text and no tool calls were emitted, inject a minimal text block.
+    // Some models (e.g. GLM, DeepSeek) occasionally return empty text content
+    // alongside a thinking block. Claude Code requires at least one non-empty
+    // text or tool_use block — without it, it throws:
+    //   "model output must contain either output text or tool calls"
+    const hasToolCalls = state.toolCalls.size > 0;
+    const hasText = state.textBlockStarted || state.textBlockClosed;
+    if (!hasText && !hasToolCalls) {
+      const fallbackIndex = state.nextBlockIndex++;
+      results.push({
+        type: "content_block_start",
+        index: fallbackIndex,
+        content_block: { type: "text", text: "" }
+      });
+      results.push({
+        type: "content_block_delta",
+        index: fallbackIndex,
+        delta: { type: "text_delta", text: " " }
+      });
+      results.push({
+        type: "content_block_stop",
+        index: fallbackIndex
+      });
+    }
+
     for (const [idx, toolInfo] of state.toolCalls) {
       // Emit buffered + sanitized args as single delta before stop
       const buffered = state.toolArgBuffers?.get(idx);

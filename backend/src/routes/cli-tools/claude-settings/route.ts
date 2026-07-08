@@ -66,11 +66,14 @@ export async function GET(req, res) {
     const settings = await readSettings();
     const baseUrl = settings?.env?.ANTHROPIC_BASE_URL || "";
     
-    // Check if the configured URL points to a 9Router instance (local, tunnel, or cloud)
+    // Check if the configured URL points to a 9Router/AMRouter instance (local, tunnel, or cloud)
     const is9Router = baseUrl.includes("localhost:3001") || 
                       baseUrl.includes("127.0.0.1:3001") || 
+                      baseUrl.includes("localhost:5177") || 
+                      baseUrl.includes("127.0.0.1:5177") || 
                       baseUrl.includes(".trycloudflare.com") || 
-                      baseUrl.includes("9router.com");
+                      baseUrl.includes("9router.com") ||
+                      baseUrl.includes("amrouter");
 
     return res.json({
       installed: true,
@@ -116,11 +119,13 @@ export async function POST_handler(req, res) {
       }
     }
 
-    // Normalize ANTHROPIC_BASE_URL to ensure /v1 suffix
+    // Normalize ANTHROPIC_BASE_URL: strip trailing /v1 if present.
+    // Claude Code's Anthropic SDK appends /v1/messages automatically, so the
+    // base URL must NOT end with /v1 — otherwise the request hits /v1/v1/messages.
     if (env.ANTHROPIC_BASE_URL) {
-      env.ANTHROPIC_BASE_URL = env.ANTHROPIC_BASE_URL.endsWith("/v1") 
-        ? env.ANTHROPIC_BASE_URL 
-        : `${env.ANTHROPIC_BASE_URL}/v1`;
+      env.ANTHROPIC_BASE_URL = env.ANTHROPIC_BASE_URL
+        .replace(/\/+$/, "")   // strip any trailing slashes
+        .replace(/\/v1$/, ""); // strip /v1 suffix if present
     }
 
     // Merge new env with existing settings

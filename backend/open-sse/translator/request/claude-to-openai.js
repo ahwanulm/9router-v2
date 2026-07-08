@@ -127,7 +127,17 @@ function convertClaudeMessage(msg) {
     for (const block of msg.content) {
       switch (block.type) {
         case "text":
-          parts.push({ type: "text", text: block.text });
+          parts.push({ type: "text", text: block.text || "" });
+          break;
+
+        case "thinking":
+        case "redacted_thinking":
+          // Convert thinking blocks to text for providers that don't support them.
+          // Only include if there's actual content.
+          if (block.thinking && typeof block.thinking === "string" && block.thinking.trim()) {
+            parts.push({ type: "text", text: block.thinking });
+          }
+          // redacted_thinking has no readable content — silently skip.
           break;
 
         case "image":
@@ -152,7 +162,7 @@ function convertClaudeMessage(msg) {
           });
           break;
 
-        case "tool_result":
+        case "tool_result": {
           let resultContent = "";
           if (typeof block.content === "string") {
             resultContent = block.content;
@@ -164,12 +174,20 @@ function convertClaudeMessage(msg) {
           } else if (block.content) {
             resultContent = JSON.stringify(block.content);
           }
-          
           toolResults.push({
             role: "tool",
             tool_call_id: block.tool_use_id,
             content: resultContent
           });
+          break;
+        }
+
+        default:
+          // Unknown block type: if it has text-like content, include it as a text part
+          // to avoid silently dropping the message and de-syncing the conversation.
+          if (block.text && typeof block.text === "string") {
+            parts.push({ type: "text", text: block.text });
+          }
           break;
       }
     }
@@ -205,10 +223,15 @@ function convertClaudeMessage(msg) {
       };
     }
     
-    // Empty content array
+    // Empty content array, or all blocks were unrecognized/empty.
+    // Return a placeholder so the message isn't dropped and conversation index stays intact.
     if (msg.content.length === 0) {
       return { role, content: "" };
     }
+
+    // Fallback: all blocks unrecognized and produced no parts/toolCalls/toolResults.
+    // Return an empty string message to preserve ordering rather than returning null.
+    return { role, content: "" };
   }
 
   return null;
