@@ -80,17 +80,8 @@ function CodeBuddyTab() {
   const [savingSettings, setSavingSettings] = useState(false);
   const [openSettings, setOpenSettings] = useState({
     general: true,
-    leonardo: false,
-    weavy: false,
-    "kimi-coding": false,
-    "cloudflare-ai": true,
     proxy: false,
   });
-  const [cfGlobalApiKey, setCfGlobalApiKey] = useState("");
-  const [cfEmail, setCfEmail] = useState("");
-  const [cfTokenName, setCfTokenName] = useState("");
-  const [cfSetupLoading, setCfSetupLoading] = useState(false);
-  const [cfSetupResult, setCfSetupResult] = useState(null);
 
   const toggleSection = (section) => {
     setOpenSettings((prev) => ({ ...prev, [section]: !prev[section] }));

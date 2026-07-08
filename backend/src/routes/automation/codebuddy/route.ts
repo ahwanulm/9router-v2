@@ -46,7 +46,7 @@ import {
   listCodeBuddyAccounts, getCodeBuddyAccount, insertCodeBuddyAccount,
   bulkDeleteCodeBuddyAccounts, deleteCodeBuddyAccount, markCodeBuddyRunning, markCodeBuddySuccess, markCodeBuddyError, markCanvaEnrolled,
   createCodeBuddyJob, getCodeBuddyJob, updateCodeBuddyJobStatus, updateCodeBuddyJobResult,
-  createProviderConnection, getProviderConnections,
+  createProviderConnection, getProviderConnections, updateProviderConnection,
   deleteProviderConnectionByEmailAndProvider
 } from "../../../lib/db/index.js";
 
@@ -660,6 +660,145 @@ function executeCodeBuddySignup(accountId, jobId, idx, settings) {
       const isKimi = account.provider === "kimi-coding" || account.provider === "kimi";
       const isQoder = account.provider === "qoder";
       const isCloudflare = account.provider === "cloudflare";
+
+      // ── Cloudflare: API-based setup (no browser, no Python) ──────────
+      if (isCloudflare) {
+        const globalApiKey = account.password;
+        const email = account.email;
+
+        if (!globalApiKey || !email) {
+          return reject(new Error("Cloudflare account butuh email + Global API Key sebagai password."));
+        }
+
+        try {
+          await updateCodeBuddyJobResult(jobId, idx, {
+            email: account.email,
+            status: "running",
+            step: "Menghubungi Cloudflare API..."
+          });
+
+          const CF_API = "https://api.cloudflare.com/client/v4";
+          const cfHeaders = {
+            "X-Auth-Key": globalApiKey,
+            "X-Auth-Email": email,
+            "Content-Type": "application/json",
+          };
+
+          const cfFetch = async (path, options: any = {}) => {
+            const r = await fetch(`${CF_API}${path}`, {
+              ...options,
+              headers: { ...cfHeaders, ...(options.headers || {}) },
+            });
+            const d = await r.json() as any;
+            if (!d.success) {
+              const msg = d.errors?.[0]?.message || "Cloudflare API error";
+              throw new Error(msg);
+            }
+            return d.result;
+          };
+
+          // 1. Get accounts
+          await updateCodeBuddyJobResult(jobId, idx, {
+            email: account.email, status: "running", step: "Memverifikasi akun Cloudflare..."
+          });
+          const accounts_ = await cfFetch("/accounts?per_page=1");
+          if (!accounts_ || accounts_.length === 0) {
+            throw new Error("Tidak ada akun Cloudflare yang ditemukan untuk kredensial ini.");
+          }
+          const cfAccount = accounts_[0];
+          const accountId = cfAccount.id;
+          const accountName = cfAccount.name;
+
+          // 2. Get permission groups
+          await updateCodeBuddyJobResult(jobId, idx, {
+            email: account.email, status: "running", step: "Mengambil permission groups..."
+          });
+          const permGroups = await cfFetch(`/accounts/${accountId}/tokens/permission_groups`) as { id: string; name: string }[];
+          const readGroup = permGroups.find((g) =>
+            g.name.toLowerCase().includes("workers ai") && g.name.toLowerCase().includes("read")
+          );
+          const editGroup = permGroups.find((g) =>
+            g.name.toLowerCase().includes("workers ai") && g.name.toLowerCase().includes("edit")
+          );
+          const analyticsGroup = permGroups.find((g) =>
+            g.name.toLowerCase().includes("account analytics") && g.name.toLowerCase().includes("read")
+          );
+          if (!readGroup || !editGroup) {
+            throw new Error(`Workers AI permission groups tidak ditemukan. Tersedia: ${permGroups.map(g => g.name).join(", ")}`);
+          }
+
+          // 3. Create API token
+          await updateCodeBuddyJobResult(jobId, idx, {
+            email: account.email, status: "running", step: "Membuat API Token Workers AI..."
+          });
+          const permissionGroups: any[] = [{ id: readGroup.id }, { id: editGroup.id }];
+          if (analyticsGroup) permissionGroups.push({ id: analyticsGroup.id });
+
+          const tokenResult = await cfFetch("/user/tokens", {
+            method: "POST",
+            body: JSON.stringify({
+              name: `9router Workers AI - ${email}`,
+              policies: [{
+                effect: "allow",
+                permission_groups: permissionGroups,
+                resources: { [`com.cloudflare.api.account.${accountId}`]: "*" },
+              }],
+            }),
+          }) as { value: string; id: string };
+
+          const newApiToken = tokenResult.value;
+
+          // 4. Save to DB
+          await markCodeBuddySuccess(account.id, newApiToken);
+          await updateCodeBuddyJobResult(jobId, idx, {
+            email: account.email,
+            status: "done",
+            api_key: newApiToken,
+            ok: true
+          });
+
+          // 5. Auto-add to 9router connections
+          try {
+            const existing = await getProviderConnections({ provider: "cloudflare-ai" });
+            if (existing.length > 0) {
+              await updateProviderConnection(existing[0].id, {
+                apiKey: newApiToken,
+                providerSpecificData: { ...(existing[0].providerSpecificData || {}), accountId },
+              });
+            } else {
+              await createProviderConnection({
+                provider: "cloudflare-ai",
+                authType: "apikey",
+                name: `Cloudflare (${accountName})`,
+                apiKey: newApiToken,
+                email: "",
+                priority: 1,
+                globalPriority: null,
+                defaultModel: null,
+                providerSpecificData: { accountId },
+                isActive: true,
+                testStatus: "active",
+              });
+            }
+          } catch (e) {
+            console.error("Cloudflare auto-add to 9router failed:", e);
+          }
+
+          return resolve();
+        } catch (err: any) {
+          const errMsg = err.message || String(err);
+          await markCodeBuddyError(account.id, errMsg);
+          await updateCodeBuddyJobResult(jobId, idx, {
+            email: account.email,
+            status: "failed",
+            error: errMsg,
+            ok: false
+          });
+          return resolve();
+        }
+      }
+      // ── End Cloudflare API path ───────────────────────────────────────
+
       if (isLeonardo && !settings.leonardo_invite_link) {
         return reject(new Error("Leonardo invite link belum di-set di Settings."));
       }
