@@ -389,11 +389,23 @@ def create_workers_ai_token(global_key, email, account_id, token_name="9router W
         # Get permission groups
         r = cf_api_call(f"/accounts/{account_id}/tokens/permission_groups", global_key, email)
         groups = r.get("result", [])
-        read_g = next((g for g in groups if "workers ai" in g["name"].lower() and "read" in g["name"].lower()), None)
-        edit_g = next((g for g in groups if "workers ai" in g["name"].lower() and "edit" in g["name"].lower()), None)
+        # Exact match first: "Workers AI Read" not "Workers AI Metadata Read"
+        def _match_wa(groups, keyword):
+            # 1. exact match: name == "Workers AI <keyword>"
+            exact = next((g for g in groups if g["name"].lower() == f"workers ai {keyword}"), None)
+            if exact: return exact
+            # 2. starts with "Workers AI " and ends with keyword (avoid Metadata)
+            ends = next((g for g in groups if g["name"].lower().startswith("workers ai ") and
+                         g["name"].lower().endswith(keyword) and "metadata" not in g["name"].lower()), None)
+            if ends: return ends
+            # 3. fallback: contains both keywords, exclude metadata
+            return next((g for g in groups if "workers ai" in g["name"].lower() and
+                         keyword in g["name"].lower() and "metadata" not in g["name"].lower()), None)
+        read_g = _match_wa(groups, "read")
+        edit_g = _match_wa(groups, "write") or _match_wa(groups, "edit")
         if not read_g or not edit_g:
-            # fallback: first two that match workers ai
-            wa = [g for g in groups if "workers ai" in g["name"].lower()]
+            # fallback: use Write as both
+            wa = [g for g in groups if "workers ai" in g["name"].lower() and "metadata" not in g["name"].lower()]
             if len(wa) >= 2:
                 read_g, edit_g = wa[0], wa[1]
             elif len(wa) == 1:
@@ -1779,11 +1791,22 @@ def main():
                 r = _req.get(f"{base_api}/user/tokens/permission_groups", headers=headers, timeout=15)
                 pg_data = r.json()
                 workers_ai_id = None
-                for pg in pg_data.get('result', []):
-                    if 'Workers AI' in pg.get('name', ''):
+                _wa_groups = pg_data.get('result', [])
+                # Prefer exact "Workers AI Read" over "Workers AI Metadata Read"
+                for pg in _wa_groups:
+                    nm = pg.get('name', '')
+                    if nm in ('Workers AI Read', 'Workers AI Write'):
                         workers_ai_id = pg['id']
-                        log_step(f"Workers AI permission group id: {workers_ai_id}")
+                        log_step(f"Workers AI permission group id (exact): {nm} = {workers_ai_id}")
                         break
+                if not workers_ai_id:
+                    # fallback: any Workers AI group that is not Metadata
+                    for pg in _wa_groups:
+                        nm = pg.get('name', '')
+                        if 'Workers AI' in nm and 'Metadata' not in nm:
+                            workers_ai_id = pg['id']
+                            log_step(f"Workers AI permission group id (fallback): {nm} = {workers_ai_id}")
+                            break
 
                 if not workers_ai_id:
                     log_step(f"Workers AI group not found. Available: {[p['name'] for p in pg_data.get('result', [])[:10]]}")
@@ -1853,9 +1876,14 @@ def main():
                     return None
                 pg_data = pg_resp.json()
                 groups = pg_data.get("result") or []
+                # Prefer exact "Workers AI Read" — avoid "Workers AI Metadata Read"
                 workers_ai_id = next(
-                    (g["id"] for g in groups if "Workers AI" in g.get("name", "")), None
+                    (g["id"] for g in groups if g.get("name") in ("Workers AI Read", "Workers AI Write")), None
                 )
+                if not workers_ai_id:
+                    workers_ai_id = next(
+                        (g["id"] for g in groups if "Workers AI" in g.get("name", "") and "Metadata" not in g.get("name", "")), None
+                    )
                 if not workers_ai_id:
                     log_step(f"Workers AI group not found. Available: {[g['name'] for g in groups[:10]]}")
                     return None
