@@ -29,7 +29,7 @@
 ## Architecture
 
 ```
-9router-v2/
+AMRouter/
 ├── backend/          # Express server (port 3001)
 │   └── src/
 │       ├── routes/   # Auto-routed endpoints (/v1, /api, /auth, ...)

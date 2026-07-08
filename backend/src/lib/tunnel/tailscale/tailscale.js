@@ -460,7 +460,7 @@ function isDaemonTunMode() {
  * Start tailscaled.
  * - With sudoPassword: TUN mode (root) → Funnel TLS works
  * - Without: userspace-networking fallback (no sudo, but Funnel TLS unstable)
- * State always lives in ~/.9router-v2/tailscale/ via --statedir.
+ * State always lives in ~/.amrouter/tailscale/ via --statedir.
  */
 export async function startDaemonWithPassword(sudoPassword) {
   if (IS_WINDOWS) {

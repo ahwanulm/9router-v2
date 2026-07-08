@@ -31,4 +31,4 @@ const css = `
   animation-delay: 4s;
 }
 `;
-fs.appendFileSync('/home/data/Project/9router-v2/frontend/src/globals.css', css);
+fs.appendFileSync('/home/data/Project/amrouter/frontend/src/globals.css', css);

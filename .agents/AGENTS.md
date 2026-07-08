@@ -1,4 +1,4 @@
-# Workspace Agent Instructions — 9router-v2
+# Workspace Agent Instructions — AMRouter
 
 ## Changelog Update (MANDATORY)
 
@@ -33,7 +33,7 @@ Skip changelog updates for:
 
 ## Project Scope
 
-- All active development targets `/home/data/Project/9router-v2`.
+- All active development targets `/home/data/Project/amrouter`.
 - Do **not** modify files in `/home/data/Project/9router` (monolith) unless explicitly requested.
 
 ## Changelog Location

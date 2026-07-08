@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "path";
 import os from "os";
 
-const APP_NAME = "9router-v2";
+const APP_NAME = "amrouter";
 
 function defaultDir() {
   if (process.platform === "win32") {

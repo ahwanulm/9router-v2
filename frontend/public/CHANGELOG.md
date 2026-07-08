@@ -32,7 +32,7 @@ All notable changes to the decoupled **9Router v2** platform will be documented 
   - **Cline**: `api.cline.bot/api/v1/auth/me` plan + credits
 
 - **Skills Page Improvements**:
-  - Skills now point to `ahwanulm/9router-v2` repo (previously `decolua/9router`)
+  - Skills now point to `ahwanulm/AMRouter` repo (previously `decolua/9router`)
   - Added `using-superpowers` and `multi-brain` agent skills
   - Page redesigned with 3 sections: Entry Point / API Capabilities / Agent Workflow
   - Quick Start card with copy-prompt button
