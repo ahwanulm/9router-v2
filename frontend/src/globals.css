@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "material-symbols/outlined.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
